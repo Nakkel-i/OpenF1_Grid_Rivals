@@ -5,6 +5,7 @@ import streamlit as st
 
 from app.data_loader import fetch_data
 
+from app.database import delete_cached_data
 
 @st.cache_data(ttl=1800)
 def get_2026_meetings():
@@ -216,6 +217,34 @@ def render_grid_rivals():
 
     st.dataframe(
         result[["Driver", "FP1", "FP2", "FP3"]],
+        hide_index=True,
+        use_container_width=True
+    )
+    
+    # Calculate average position across FP1, FP2 and FP3.
+    # Ignore "NT" entries when calculating the average.
+    def calculate_average(row):
+        positions = pd.to_numeric(
+            row[["FP1", "FP2", "FP3"]],
+            errors="coerce"
+        ).dropna()
+
+        if positions.empty:
+            return "NT"
+
+        return f"{positions.mean():.1f}"
+
+    result["AVG"] = result.apply(calculate_average, axis=1)
+
+    result = result.sort_values(
+        "Driver",
+        key=lambda column: column.str.casefold()
+    ).reset_index(drop=True)
+
+    st.subheader(labels[meeting_keys.index(selected_key)])
+
+    st.dataframe(
+        result[["Driver", "FP1", "FP2", "FP3", "AVG"]],
         hide_index=True,
         use_container_width=True
     )

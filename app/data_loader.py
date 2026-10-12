@@ -1,92 +1,147 @@
-import streamlit as st
-import requests
-import pandas as pd
-from dotenv import load_dotenv
+
 import os
+
+import pandas as pd
+import requests
+import streamlit as st
+from dotenv import load_dotenv
+
+from app.database import get_cached_data, save_cached_data
 
 load_dotenv()
 
-BASE_URL = os.getenv("BASE_API_URL")
+BASE_URL = os.getenv(
+    "BASE_API_URL",
+    "https://api.openf1.org/v1/"
+).rstrip("/") + "/"
 
-@st.cache_data(ttl=600)
+
 def fetch_data(endpoint, params=None):
     """
-    Fetch data from the OpenF1 API and return it as a DataFrame.
+    Return API data from SQLite if it exists.
+    Otherwise, fetch it from OpenF1 and save it permanently.
 
-    Args:
-        endpoint (str): API endpoint (e.g., "meetings", "sessions").
-        params (dict): Optional query parameters for the API.
-
-    Returns:
-        pd.DataFrame: DataFrame containing the API response data.
-
-    Notes:
-        The OpenF1 API requires properly URL-encoded query strings,
-        especially when using complex filters (e.g., strings with spaces).
-        Using `requests.get(url, params=params)` sometimes causes issues with
-        formatting, so we manually prepare the full URL using `requests.Request`.
+    Cached data never expires automatically.
     """
+
     if params is None:
         params = {}
 
+    # 1. Check the permanent local database.
+    cached_data = get_cached_data(endpoint, params)
+
+    if cached_data is not None:
+        return pd.DataFrame(cached_data)
+
+    # 2. Fetch data only if it is not in SQLite.
     url = f"{BASE_URL}{endpoint}"
-    full_url = requests.Request('GET', url, params=params).prepare().url
-    response = requests.get(full_url)
+
+    response = requests.get(
+        url,
+        params=params,
+        timeout=30
+    )
+
     response.raise_for_status()
-    return pd.DataFrame(response.json())
+
+    data = response.json()
+
+    # 3. Save the successful response permanently.
+    save_cached_data(endpoint, params, data)
+
+    return pd.DataFrame(data)
 
 
-# Cached API calls using Streamlit's cache_data decorator
-
-@st.cache_data
 def fetch_meetings(year, country):
-    # The 'meetings' endpoint returns all information for a specified meeting (Miami, Monaco, Imola, etc)
-    # for a specified year (2023, 2024, etc).
-    df = fetch_data("meetings", {"year": year, "country_name": country})
+    """Fetch meetings for a year and country."""
+
+    df = fetch_data(
+        "meetings",
+        {"year": year, "country_name": country}
+    )
+
     if df.empty:
-        st.error("⚠️ No meeting data found.")
-        return pd.DataFrame()
+        st.warning("No meeting data found.")
+        return pd.DataFrame(
+            columns=["meeting_key", "label", "year"]
+        )
 
-    # Create a label for easier dropdown display
-    df["label"] = df["meeting_name"] + " - " + df["location"]
-    df = df.sort_values(by="meeting_key", ascending=False)
+    df = df.copy()
 
-    # Return minimal relevant fields
-    return df[["meeting_key", "label", "year"]].drop_duplicates()
+    df["label"] = (
+        df["meeting_name"].fillna("")
+        + " - "
+        + df["location"].fillna("")
+    )
+
+    df = df.sort_values(
+        by="meeting_key",
+        ascending=False
+    )
+
+    return df[
+        ["meeting_key", "label", "year"]
+    ].drop_duplicates()
 
 
-@st.cache_data
 def fetch_sessions(meeting_key):
-    # The 'sessions' endpoint returns all session types (FP1, Qualifying, Race) for a specific Grand Prix.
-    # Filtered here using 'meeting_key' from the 'meetings' endpoint.
-    df = fetch_data("sessions", {"meeting_key": meeting_key})
+    """Fetch sessions for a selected Grand Prix."""
 
-    # Combine session name and start date for display
-    df["label"] = df["session_name"] + " (" + df["date_start"] + ")"
+    df = fetch_data(
+        "sessions",
+        {"meeting_key": meeting_key}
+    )
 
-    # Only keep necessary columns for dropdowns
-    return df[["session_key", "label"]].drop_duplicates()
+    if df.empty:
+        return pd.DataFrame(
+            columns=["session_key", "label"]
+        )
+
+    df = df.copy()
+
+    df["label"] = (
+        df["session_name"].fillna("")
+        + " ("
+        + df["date_start"].fillna("")
+        + ")"
+    )
+
+    return df[
+        ["session_key", "label"]
+    ].drop_duplicates()
 
 
-@st.cache_data
 def fetch_laps(session_key):
-    # Retrieves detailed lap timing data for a given session
-    return fetch_data("laps", {"session_key": session_key})
+    """Fetch lap timing data."""
+
+    return fetch_data(
+        "laps",
+        {"session_key": session_key}
+    )
 
 
-@st.cache_data
 def fetch_stints(session_key):
-    # Fetches tire stint data, which includes tire compound and start/end laps
-    return fetch_data("stints", {"session_key": session_key})
+    """Fetch tyre stint data."""
+
+    return fetch_data(
+        "stints",
+        {"session_key": session_key}
+    )
 
 
-@st.cache_data
 def fetch_pit_stop(session_key):
-    # Returns pit stop information, including duration and lap number
-    return fetch_data("pit", {"session_key": session_key})
+    """Fetch pit stop data."""
+
+    return fetch_data(
+        "pit",
+        {"session_key": session_key}
+    )
 
 
-@st.cache_data
 def fetch_drivers(session_key):
-    # Provides driver metadata such as name, number, and team color
-    return fetch_data("drivers", {"session_key": session_key})
+    """Fetch driver information."""
+
+    return fetch_data(
+        "drivers",
+        {"session_key": session_key}
+    )
