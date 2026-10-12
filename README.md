@@ -147,3 +147,10 @@ Ideas to build on:
 You've now built an interactive F1 dashboard using real-world telemetry data from the OpenF1 API. This is a great example of combining API usage, data processing, and visual storytelling in Python.
 
 Fork it, share it, or showcase it in your portfolio!
+
+
+
+## To Run ##
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m streamlit run main.py
