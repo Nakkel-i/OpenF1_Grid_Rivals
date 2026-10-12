@@ -8,7 +8,7 @@ load_dotenv()
 
 BASE_URL = os.getenv("BASE_API_URL")
 
-
+@st.cache_data(ttl=600)
 def fetch_data(endpoint, params=None):
     """
     Fetch data from the OpenF1 API and return it as a DataFrame.
