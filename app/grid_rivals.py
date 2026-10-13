@@ -29,11 +29,44 @@ def get_session_results(session_key):
     )
 
 
+def normalize_team_colour(value):
+    """Return a valid six-character RGB colour, or grey as fallback."""
+    if pd.isna(value):
+        return "808080"
+
+    colour = str(value).strip().lstrip("#")
+
+    if (
+        len(colour) == 6
+        and all(char in "0123456789ABCDEFabcdef" for char in colour)
+    ):
+        return colour.upper()
+
+    return "808080"
+
+
+def get_text_colour(hex_colour):
+    """Choose black or white text for readable contrast."""
+    colour = normalize_team_colour(hex_colour)
+
+    red = int(colour[0:2], 16)
+    green = int(colour[2:4], 16)
+    blue = int(colour[4:6], 16)
+
+    brightness = (
+        0.299 * red
+        + 0.587 * green
+        + 0.114 * blue
+    )
+
+    return "#000000" if brightness > 155 else "#FFFFFF"
+
+
 def render_grid_rivals():
     st.header("🏁 Grid Rivals")
     st.caption("2026 season — practice standings and race results")
 
-    # Get only the 2026 races.
+    # Load the 2026 calendar.
     try:
         meetings = get_2026_meetings()
     except requests.RequestException as exc:
@@ -52,7 +85,6 @@ def render_grid_rivals():
         st.info("No 2026 races are available from the API.")
         return
 
-    # Create race labels.
     meetings = meetings.copy()
 
     meetings["label"] = (
@@ -89,7 +121,6 @@ def render_grid_rivals():
         st.info("Session information is not available yet.")
         return
 
-    # Map OpenF1 session names to the requested columns.
     practice_names = {
         "practice 1": "FP1",
         "fp1": "FP1",
@@ -134,7 +165,7 @@ def render_grid_rivals():
         else None
     )
 
-    # Get driver information from an available session.
+    # Fetch driver details, including team names and colours.
     try:
         driver_df = pd.DataFrame()
 
@@ -162,6 +193,7 @@ def render_grid_rivals():
         return
 
     driver_df = driver_df.copy()
+
     driver_df["driver_number"] = (
         driver_df["driver_number"].astype(str)
     )
@@ -181,11 +213,19 @@ def render_grid_rivals():
     else:
         driver_df["Driver"] = driver_df["driver_number"]
 
+    # Store the API's team colours for row styling.
+    if "team_colour" in driver_df.columns:
+        driver_df["team_colour"] = (
+            driver_df["team_colour"].apply(normalize_team_colour)
+        )
+    else:
+        driver_df["team_colour"] = "808080"
+
     result = driver_df[
-        ["driver_number", "Driver"]
+        ["driver_number", "Driver", "team_colour"]
     ].drop_duplicates("driver_number").copy()
 
-    # Load final positions for FP1, FP2 and FP3.
+    # Load FP1, FP2 and FP3 finishing positions.
     for practice in ("FP1", "FP2", "FP3"):
         result[practice] = "NT"
 
@@ -274,8 +314,7 @@ def render_grid_rivals():
                 f"Race results could not be loaded: {exc}"
             )
 
-    # Calculate average position across FP1, FP2 and FP3.
-    # Ignore "NT" entries and round to one decimal place.
+    # Calculate the average of available practice positions.
     def calculate_average(row):
         positions = pd.to_numeric(
             row[["FP1", "FP2", "FP3"]],
@@ -289,7 +328,7 @@ def render_grid_rivals():
 
     result["AVG"] = result.apply(calculate_average, axis=1)
 
-    # Calculate estimated finishing position using weighted practice results.
+    # Calculate weighted estimated finishing position.
     # FP1 = 20%, FP2 = 30%, FP3 = 50%.
     def calculate_estimate(row):
         weights = {
@@ -314,15 +353,13 @@ def render_grid_rivals():
         if total_weight == 0:
             return "NT"
 
-        # Normalize weights if a practice session is missing.
         estimate = weighted_total / total_weight
 
         return f"{estimate:.1f}"
 
     result["EST"] = result.apply(calculate_estimate, axis=1)
 
-    # Sort drivers by estimated finishing position.
-    # Drivers without estimates are placed last.
+    # Sort by estimated finishing position.
     result["_sort_est"] = pd.to_numeric(
         result["EST"],
         errors="coerce"
@@ -334,13 +371,33 @@ def render_grid_rivals():
         .reset_index(drop=True)
     )
 
-    # Display the table once.
+    # Prepare the visible table.
+    display_columns = [
+        "Driver", "FP1", "FP2", "FP3", "AVG", "EST", "RACE"
+    ]
+
+    display_df = result[display_columns].copy()
+
+    # Apply each driver's team colour across the entire row.
+    def style_driver_row(row):
+        team_colour = result.loc[row.name, "team_colour"]
+        background = f"#{normalize_team_colour(team_colour)}"
+        foreground = get_text_colour(team_colour)
+
+        return [
+            f"background-color: {background}; color: {foreground};"
+            for _ in row
+        ]
+
+    styled_df = display_df.style.apply(
+        style_driver_row,
+        axis=1
+    )
+
     st.subheader(labels[meeting_keys.index(selected_key)])
 
     st.dataframe(
-        result[
-            ["Driver", "FP1", "FP2", "FP3", "AVG", "EST", "RACE"]
-        ],
+        styled_df,
         hide_index=True,
         use_container_width=True
     )
