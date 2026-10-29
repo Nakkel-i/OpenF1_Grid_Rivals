@@ -21,8 +21,11 @@ from app.visualizer import (
 
 st.set_page_config(page_title="F1 Strategy Dashboard", layout="wide")
 #added here#
-grid_rivals_tab, strategy_tab = st.tabs(
-    ["Grid Rivals", "F1 Strategy Dashboard"])
+grid_rivals_tab, strategy_tab, prices_tab = st.tabs([
+    "Grid Rivals",
+    "F1 Strategy Dashboard",
+    "Grid Rival price",
+])
 
 with strategy_tab:
     st.title("🏎️ Formula 1 Strategy Dashboard")
@@ -122,3 +125,9 @@ with grid_rivals_tab:
     from app.grid_rivals import render_grid_rivals
 
     render_grid_rivals()
+
+
+with prices_tab:
+    from app.grid_rival_prices import render_grid_rival_prices
+
+    render_grid_rival_prices()

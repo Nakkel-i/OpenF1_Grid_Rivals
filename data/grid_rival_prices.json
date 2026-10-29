@@ -1,0 +1,136 @@
+{
+  "drivers": {
+    "1": {
+      "name": "Lando Norris",
+      "team": "McLaren",
+      "price": 26.5
+    },
+    "81": {
+      "name": "Oscar Piastri",
+      "team": "McLaren",
+      "price": null
+    },
+    "63": {
+      "name": "George Russell",
+      "team": "Mercedes",
+      "price": null
+    },
+    "12": {
+      "name": "Andrea Kimi Antonelli",
+      "team": "Mercedes",
+      "price": 31.3
+    },
+    "16": {
+      "name": "Charles Leclerc",
+      "team": "Ferrari",
+      "price": 29.5
+    },
+    "44": {
+      "name": "Lewis Hamilton",
+      "team": "Ferrari",
+      "price": 26.6
+    },
+    "1R": {
+      "name": "Max Verstappen",
+      "team": "Red Bull",
+      "price": 31.7
+    },
+    "6": {
+      "name": "Isack Hadjar",
+      "team": "Red Bull",
+      "price": null
+    },
+    "14": {
+      "name": "Fernando Alonso",
+      "team": "Aston Martin",
+      "price": null
+    },
+    "18": {
+      "name": "Lance Stroll",
+      "team": "Aston Martin",
+      "price": null
+    },
+    "10": {
+      "name": "Pierre Gasly",
+      "team": "Alpine",
+      "price": null
+    },
+    "7": {
+      "name": "Jack Doohan",
+      "team": "Alpine",
+      "price": null
+    },
+    "23": {
+      "name": "Alexander Albon",
+      "team": "Williams",
+      "price": null
+    },
+    "55": {
+      "name": "Carlos Sainz",
+      "team": "Williams",
+      "price": null
+    },
+    "22": {
+      "name": "Yuki Tsunoda",
+      "team": "Racing Bulls",
+      "price": null
+    },
+    "30": {
+      "name": "Liam Lawson",
+      "team": "Racing Bulls",
+      "price": null
+    },
+    "31": {
+      "name": "Esteban Ocon",
+      "team": "Haas",
+      "price": null
+    },
+    "87": {
+      "name": "Oliver Bearman",
+      "team": "Haas",
+      "price": null
+    },
+    "27": {
+      "name": "Nico Hulkenberg",
+      "team": "Kick Sauber",
+      "price": null
+    },
+    "5": {
+      "name": "Gabriel Bortoleto",
+      "team": "Kick Sauber",
+      "price": null
+    }
+  },
+  "constructors": {
+    "McLaren": {
+      "price": null
+    },
+    "Mercedes": {
+      "price": null
+    },
+    "Ferrari": {
+      "price": null
+    },
+    "Red Bull": {
+      "price": null
+    },
+    "Aston Martin": {
+      "price": null
+    },
+    "Alpine": {
+      "price": null
+    },
+    "Williams": {
+      "price": null
+    },
+    "Racing Bulls": {
+      "price": null
+    },
+    "Haas": {
+      "price": null
+    },
+    "Kick Sauber": {
+      "price": null
+    }
+  }
+}
