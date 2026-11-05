@@ -2803,8 +2803,8 @@
                     "team": "Alpine",
                     "price": 11.9
                 },
-                "7": {
-                    "name": "Jack Doohan",
+                "10": {
+                    "name": "Pierre Gasly",
                     "team": "Alpine",
                     "price": 15.9
                 },
@@ -2831,7 +2831,7 @@
                 "31": {
                     "name": "Esteban Ocon",
                     "team": "Haas",
-                    "price": null
+                    "price": 8.0
                 },
                 "87": {
                     "name": "Oliver Bearman",

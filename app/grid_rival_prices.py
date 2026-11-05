@@ -63,7 +63,7 @@ DRIVERS = [
     ("14", "Fernando Alonso", "Aston Martin"),
     ("18", "Lance Stroll", "Aston Martin"),
     ("43", "Franco Colapinto", "Alpine"),
-    ("7", "Jack Doohan", "Alpine"),
+    ("10", "Pierre Gasly", "Alpine"),
     ("23", "Alexander Albon", "Williams"),
     ("55", "Carlos Sainz", "Williams"),
     ("41", "Arvid Lindblad", "Racing Bulls"),
@@ -93,15 +93,6 @@ CONSTRUCTORS = [
 
 # ============================================================
 # DATA STRUCTURE
-#
-# {
-#     "2026": {
-#         "Australia": {
-#             "drivers": {},
-#             "constructors": {}
-#         }
-#     }
-# }
 # ============================================================
 
 def empty_race():
@@ -211,6 +202,9 @@ def save_prices(prices):
 
 def parse_price(value):
 
+    if value is None:
+        return None
+
     value = str(value).strip().replace(",", ".")
 
     if not value:
@@ -226,6 +220,110 @@ def parse_price(value):
         return "invalid"
 
     return price
+
+
+# ============================================================
+# FIND LATEST EVENT WITH SAVED PRICES
+# ============================================================
+
+def get_latest_priced_race(prices, season):
+    """
+    Search the race calendar backwards.
+
+    Returns the latest race that contains at least one
+    valid driver or constructor price.
+
+    Returns None if no race has any valid prices.
+    """
+
+    season_prices = prices.get(season, {})
+
+    for race in reversed(RACES):
+
+        race_data = season_prices.get(race, {})
+
+        driver_prices = race_data.get("drivers", {})
+        constructor_prices = race_data.get("constructors", {})
+
+        has_valid_price = False
+
+        # Check driver prices.
+        for entry in driver_prices.values():
+
+            if not isinstance(entry, dict):
+                continue
+
+            price = parse_price(entry.get("price"))
+
+            if isinstance(price, (int, float)):
+                has_valid_price = True
+                break
+
+        # Check constructor prices if no driver price was found.
+        if not has_valid_price:
+
+            for entry in constructor_prices.values():
+
+                if not isinstance(entry, dict):
+                    continue
+
+                price = parse_price(entry.get("price"))
+
+                if isinstance(price, (int, float)):
+                    has_valid_price = True
+                    break
+
+        if has_valid_price:
+            return race
+
+    return None
+
+
+# ============================================================
+# SORT DRIVERS AND CONSTRUCTORS BY LATEST EVENT PRICES
+# ============================================================
+
+def sort_by_latest_price(items, price_data, get_identifier):
+    """
+    Sort items by their price in the latest priced event.
+
+    Valid prices:
+        Highest first.
+
+    Missing prices:
+        Remain at the bottom in their original default order.
+    """
+
+    indexed_items = list(enumerate(items))
+
+    def sort_key(indexed_item):
+
+        original_index, item = indexed_item
+
+        identifier = get_identifier(item)
+
+        entry = price_data.get(identifier, {})
+
+        if not isinstance(entry, dict):
+            return (1, 0, original_index)
+
+        price = parse_price(entry.get("price"))
+
+        if isinstance(price, (int, float)):
+            return (0, -price, original_index)
+
+        # No price: retain original order after priced entries.
+        return (1, 0, original_index)
+
+    sorted_items = sorted(
+        indexed_items,
+        key=sort_key,
+    )
+
+    return [
+        item
+        for original_index, item in sorted_items
+    ]
 
 
 # ============================================================
@@ -253,6 +351,49 @@ def render_grid_rival_prices():
     )
 
     prices.setdefault(selected_season, {})
+
+    # --------------------------------------------------------
+    # FIND LATEST EVENT WITH PRICES
+    # --------------------------------------------------------
+
+    latest_priced_race = get_latest_priced_race(
+        prices,
+        selected_season,
+    )
+
+    if latest_priced_race is not None:
+
+        latest_prices = prices[selected_season][latest_priced_race]
+
+        # Sort drivers using latest event prices.
+        sorted_drivers = sort_by_latest_price(
+            DRIVERS,
+            latest_prices.get("drivers", {}),
+            lambda driver: driver[0],
+        )
+
+        # Sort constructors using latest event prices.
+        sorted_constructors = sort_by_latest_price(
+            CONSTRUCTORS,
+            latest_prices.get("constructors", {}),
+            lambda team: team,
+        )
+
+        st.caption(
+            f"List sorted by prices from the latest event with saved prices: "
+            f"{latest_priced_race}."
+        )
+
+    else:
+
+        # No saved prices in any event.
+        # Use original default listing.
+        sorted_drivers = DRIVERS
+        sorted_constructors = CONSTRUCTORS
+
+        st.caption(
+            "No saved event prices found. Showing the default listing."
+        )
 
     # --------------------------------------------------------
     # RACE SELECTOR
@@ -293,7 +434,7 @@ def render_grid_rival_prices():
 
         driver_values = {}
 
-        for number, name, team in DRIVERS:
+        for number, name, team in sorted_drivers:
 
             existing = race_prices["drivers"].get(
                 number,
@@ -330,7 +471,7 @@ def render_grid_rival_prices():
 
         constructor_values = {}
 
-        for team in CONSTRUCTORS:
+        for team in sorted_constructors:
 
             existing = race_prices["constructors"].get(
                 team,
@@ -408,7 +549,9 @@ def render_grid_rival_prices():
         # VALIDATE CONSTRUCTORS
         # ----------------------------------------------------
 
-        for team, raw_value in constructor_values.items():
+        for team in CONSTRUCTORS:
+
+            raw_value = constructor_values[team]
 
             price = parse_price(raw_value)
 
@@ -473,5 +616,6 @@ def render_grid_rival_prices():
         "Prices are stored locally in "
         "data/grid_rival_prices.json. "
         "Each race has its own independent prices. "
+        "The list is sorted using the latest event with saved prices. "
         "No OpenF1 API requests are made by this page."
     )
