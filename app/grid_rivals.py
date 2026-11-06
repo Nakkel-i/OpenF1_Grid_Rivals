@@ -358,6 +358,13 @@ def render_grid_rivals():
         return f"{estimate:.1f}"
 
     result["EST"] = result.apply(calculate_estimate, axis=1)
+    # Make existing EST values available to the Grid Rival lineup tab.
+    st.session_state["grid_rivals_estimates"] = dict(
+        zip(
+            result["driver_number"].astype(str),
+            result["EST"].astype(str),
+        )
+)
 
     # Sort by estimated finishing position.
     result["_sort_est"] = pd.to_numeric(

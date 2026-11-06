@@ -9,7 +9,6 @@ from app.grid_rival_prices import RACES, SEASONS, load_prices
 
 
 def _as_decimal(value):
-    """Convert a stored price to Decimal. Return None for missing/invalid values."""
     if value is None or str(value).strip() == "":
         return None
 
@@ -30,6 +29,30 @@ def _format_price(value):
     return f"{value:.1f}".replace(".", ",")
 
 
+def _format_estimates(estimates):
+    """Display the five driver estimates in lineup order."""
+    return " / ".join(str(value) for value in estimates)
+
+def _calculate_est_avg(estimates):
+    """Calculate the average of available numeric EST values."""
+
+    numeric_values = []
+
+    for estimate in estimates:
+        try:
+            value = float(str(estimate).replace(",", "."))
+
+            if value >= 0:
+                numeric_values.append(value)
+
+        except (ValueError, TypeError):
+            continue
+
+    if not numeric_values:
+        return "NT"
+
+    return f"{sum(numeric_values) / len(numeric_values):.1f}"
+
 def _lineup_signature(season, race, budget, driver_choices, constructor_choices):
     return (
         season,
@@ -41,16 +64,15 @@ def _lineup_signature(season, race, budget, driver_choices, constructor_choices)
 
 
 def _calculate_lineups(drivers, constructors, budget):
-    """
-    Return every affordable lineup containing exactly five drivers
-    and exactly one constructor.
-    """
+    """Calculate all affordable combinations of 5 drivers and 1 constructor."""
+
     results = []
 
     eligible_drivers = [
         driver for driver in drivers
         if driver["included"] and driver["price"] is not None
     ]
+
     eligible_constructors = [
         constructor for constructor in constructors
         if constructor["included"] and constructor["price"] is not None
@@ -60,17 +82,24 @@ def _calculate_lineups(drivers, constructors, budget):
         return results
 
     for driver_group in itertools.combinations(eligible_drivers, 5):
+
         driver_total = sum(
             (driver["price"] for driver in driver_group),
             Decimal("0"),
         )
 
         for constructor in eligible_constructors:
+
             total = driver_total + constructor["price"]
 
             if total <= budget:
                 results.append({
-                    "drivers": [driver["name"] for driver in driver_group],
+                    "drivers": [
+                        driver["name"] for driver in driver_group
+                    ],
+                    "estimates": [
+                        driver["estimate"] for driver in driver_group
+                    ],
                     "constructor": constructor["name"],
                     "total": total,
                     "remaining": budget - total,
@@ -99,6 +128,10 @@ def render_grid_rival_lineup():
 
     prices = load_prices()
 
+    # ========================================================
+    # SELECTORS
+    # ========================================================
+
     top_col1, top_col2, top_col3 = st.columns([1, 1, 1.2])
 
     with top_col1:
@@ -118,7 +151,7 @@ def render_grid_rival_lineup():
     with top_col3:
         budget_text = st.text_input(
             "Budget",
-            value=st.session_state.get("lineup_budget_text", "100,0"),
+            value="100,0",
             placeholder="e.g. 104,5",
             key="lineup_budget_text",
         )
@@ -139,6 +172,20 @@ def render_grid_rival_lineup():
     if not isinstance(race_constructors, dict):
         race_constructors = {}
 
+    # ========================================================
+    # GET EXISTING ESTIMATES FROM GRID RIVALS
+    # ========================================================
+
+    # These values are populated by grid_rivals.py.
+    # They are not recalculated here.
+    race_estimates = st.session_state.get(
+        "grid_rivals_estimates",
+        {},
+    )
+
+    if not isinstance(race_estimates, dict):
+        race_estimates = {}
+
     st.divider()
 
     driver_choices = {}
@@ -149,13 +196,13 @@ def render_grid_rival_lineup():
 
     # ========================================================
     # DRIVERS
+    # EST IS NOT DISPLAYED IN THIS LIST.
     # ========================================================
 
     st.subheader("Drivers")
 
     st.caption(
-        "Choose Include to keep a driver available for the combinations, "
-        "or Exclude to remove the driver from consideration."
+        "Choose Include or Exclude for each driver."
     )
 
     header_cols = st.columns([4.5, 1.4, 2.2])
@@ -174,14 +221,29 @@ def render_grid_rival_lineup():
 
         details = details if isinstance(details, dict) else {}
 
-        name = str(details.get("name") or f"Driver {driver_key}")
+        driver_key = str(driver_key)
+
+        name = str(
+            details.get("name") or f"Driver {driver_key}"
+        )
+
         team = str(details.get("team") or "")
 
         price = _as_decimal(details.get("price"))
 
+        # Retrieve the existing estimate from Grid Rivals.
+        estimate = race_estimates.get(driver_key, "NT")
+
+        if estimate is None or str(estimate).strip() == "":
+            estimate = "NT"
+        else:
+            estimate = str(estimate)
+
         row = st.columns([4.5, 1.4, 2.2])
 
-        driver_label = f"{name} — {team}" if team else name
+        driver_label = (
+            f"{name} — {team}" if team else name
+        )
 
         row[0].write(driver_label)
         row[1].write(_format_price(price))
@@ -200,13 +262,14 @@ def render_grid_rival_lineup():
             key=choice_key,
         )
 
-        driver_choices[str(driver_key)] = choice
+        driver_choices[driver_key] = choice
 
         driver_records.append({
-            "key": str(driver_key),
+            "key": driver_key,
             "name": name,
             "team": team,
             "price": price,
+            "estimate": estimate,
             "included": choice == "Include",
         })
 
@@ -303,7 +366,7 @@ def render_grid_rival_lineup():
             }
 
     # ========================================================
-    # DISPLAY RESULTS
+    # DISPLAY CALCULATED RESULTS
     # ========================================================
 
     saved_calculation = st.session_state.get(
@@ -352,6 +415,8 @@ def render_grid_rival_lineup():
                 display_rows.append({
                     "Rank": index,
                     "Drivers": ", ".join(result["drivers"]),
+                    "EST": _format_estimates(result["estimates"]),
+                    "EST AVG": _calculate_est_avg(result["estimates"]),
                     "Constructor": result["constructor"],
                     "Total price": _format_price(result["total"]),
                     "Budget remaining": _format_price(result["remaining"]),
