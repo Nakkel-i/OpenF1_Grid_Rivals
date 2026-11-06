@@ -424,6 +424,23 @@ def render_grid_rival_lineup():
 
             results_df = pd.DataFrame(display_rows)
 
+            # Sort EST AVG numerically instead of alphabetically.
+            results_df["_EST_SORT"] = pd.to_numeric(
+            results_df["EST AVG"].astype(str).str.replace(",", ".", regex=False),
+            errors="coerce"
+            )
+
+            results_df = results_df.sort_values(
+            by="_EST_SORT",
+            ascending=True,
+            na_position="last"
+            )           .drop(columns=["_EST_SORT"])
+
+            results_df = results_df.reset_index(drop=True)
+
+            # Update rank numbers after sorting.
+            results_df["Rank"] = range(1, len(results_df) + 1)
+
             st.dataframe(
                 results_df,
                 use_container_width=True,
