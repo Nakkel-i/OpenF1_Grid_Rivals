@@ -2900,134 +2900,147 @@
                 "1": {
                     "name": "Lando Norris",
                     "team": "McLaren",
-                    "price": 26.5
+                    "price": 28.3
                 },
                 "81": {
                     "name": "Oscar Piastri",
                     "team": "McLaren",
-                    "price": null
+                    "price": 22.4
                 },
                 "63": {
                     "name": "George Russell",
                     "team": "Mercedes",
-                    "price": null
+                    "price": 25.3
                 },
                 "12": {
                     "name": "Andrea Kimi Antonelli",
                     "team": "Mercedes",
-                    "price": 31.3
+                    "price": 30.3
                 },
                 "16": {
                     "name": "Charles Leclerc",
                     "team": "Ferrari",
-                    "price": 29.5
+                    "price": 27.6
                 },
                 "44": {
                     "name": "Lewis Hamilton",
                     "team": "Ferrari",
-                    "price": 26.6
+                    "price": 26.0
                 },
-                "1R": {
+                "3": {
                     "name": "Max Verstappen",
                     "team": "Red Bull",
-                    "price": 31.7
+                    "price": 32.2
                 },
                 "6": {
                     "name": "Isack Hadjar",
                     "team": "Red Bull",
-                    "price": null
+                    "price": 24.8
                 },
                 "14": {
                     "name": "Fernando Alonso",
                     "team": "Aston Martin",
-                    "price": null
+                    "price": 9.7
                 },
                 "18": {
                     "name": "Lance Stroll",
                     "team": "Aston Martin",
-                    "price": null
+                    "price": 4.1
+                },
+                "43": {
+                    "name": "Franco Colapinto",
+                    "team": "Alpine",
+                    "price": 12.6
                 },
                 "10": {
                     "name": "Pierre Gasly",
                     "team": "Alpine",
-                    "price": null
-                },
-                "7": {
-                    "name": "Jack Doohan",
-                    "team": "Alpine",
-                    "price": null
+                    "price": 14.5
                 },
                 "23": {
                     "name": "Alexander Albon",
                     "team": "Williams",
-                    "price": null
+                    "price": 9.9
                 },
                 "55": {
                     "name": "Carlos Sainz",
                     "team": "Williams",
-                    "price": null
+                    "price": 9.8
                 },
-                "22": {
-                    "name": "Yuki Tsunoda",
+                "41": {
+                    "name": "Arvid Lindblad",
                     "team": "Racing Bulls",
-                    "price": null
+                    "price": 15.5
                 },
                 "30": {
                     "name": "Liam Lawson",
                     "team": "Racing Bulls",
-                    "price": null
+                    "price": 21.9
                 },
                 "31": {
                     "name": "Esteban Ocon",
                     "team": "Haas",
-                    "price": null
+                    "price": 7.3
                 },
                 "87": {
                     "name": "Oliver Bearman",
                     "team": "Haas",
-                    "price": null
+                    "price": 10.1
                 },
                 "27": {
                     "name": "Nico Hulkenberg",
-                    "team": "Kick Sauber",
-                    "price": null
+                    "team": "Audi",
+                    "price": 18.5
                 },
                 "5": {
                     "name": "Gabriel Bortoleto",
-                    "team": "Kick Sauber",
-                    "price": null
+                    "team": "Audi",
+                    "price": 12.1
+                },
+                "11": {
+                    "name": "Sergio Perez",
+                    "team": "Cadillac",
+                    "price": 7.3
+                },
+                "77": {
+                    "name": "Valtteri Bottas",
+                    "team": "Cadillac",
+                    "price": 3.2
                 }
             },
             "constructors": {
                 "McLaren": {
-                    "price": null
+                    "price": 24.5
                 },
                 "Mercedes": {
-                    "price": null
+                    "price": 27.0
                 },
                 "Ferrari": {
-                    "price": null
+                    "price": 26.6
                 },
                 "Red Bull": {
-                    "price": null
+                    "price": 25.5
                 },
                 "Aston Martin": {
-                    "price": null
+                    "price": 8.2
                 },
                 "Alpine": {
-                    "price": null
+                    "price": 14.7
                 },
                 "Williams": {
-                    "price": null
+                    "price": 11.2
                 },
                 "Racing Bulls": {
-                    "price": null
+                    "price": 17.8
                 },
                 "Haas": {
-                    "price": null
+                    "price": 10.4
                 },
-                "Kick Sauber": {
-                    "price": null
+                "Audi": {
+                    "price": 16.4
+                },
+                "Cadillac": {
+                    "price": 5.1
                 }
             }
         },
