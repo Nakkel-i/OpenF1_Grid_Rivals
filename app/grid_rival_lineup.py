@@ -63,27 +63,68 @@ def _lineup_signature(season, race, budget, driver_choices, constructor_choices)
     )
 
 
+
 def _calculate_lineups(drivers, constructors, budget):
-    """Calculate all affordable combinations of 5 drivers and 1 constructor."""
+    """Calculate all affordable combinations of 5 drivers and 1 constructor.
+    
+    Locked drivers are automatically included in every lineup.
+    """
 
     results = []
 
+    # Drivers that must appear in every lineup.
+    locked_drivers = [
+        driver for driver in drivers
+        if driver["locked"] and driver["price"] is not None
+    ]
+
+    # If a locked driver has no price, calculation is impossible.
+    if any(
+        driver["locked"] and driver["price"] is None
+        for driver in drivers
+    ):
+        return results
+
+    # A lineup cannot contain more than five locked drivers.
+    if len(locked_drivers) > 5:
+        return results
+
+    # Remaining drivers that can be selected.
     eligible_drivers = [
         driver for driver in drivers
-        if driver["included"] and driver["price"] is not None
+        if driver["included"]
+        and not driver["locked"]
+        and driver["price"] is not None
     ]
 
     eligible_constructors = [
         constructor for constructor in constructors
-        if constructor["included"] and constructor["price"] is not None
+        if constructor["included"]
+        and constructor["price"] is not None
     ]
 
-    if len(eligible_drivers) < 5 or not eligible_constructors:
+    # Calculate how many additional drivers are needed.
+    remaining_slots = 5 - len(locked_drivers)
+
+    if len(eligible_drivers) < remaining_slots or not eligible_constructors:
         return results
 
-    for driver_group in itertools.combinations(eligible_drivers, 5):
+    # Calculate the price of locked drivers.
+    locked_total = sum(
+        (driver["price"] for driver in locked_drivers),
+        Decimal("0"),
+    )
 
-        driver_total = sum(
+    # Only select the remaining required number of drivers.
+    for driver_group in itertools.combinations(
+        eligible_drivers,
+        remaining_slots,
+    ):
+
+        # Combine locked drivers with selected drivers.
+        complete_driver_group = locked_drivers + list(driver_group)
+
+        driver_total = locked_total + sum(
             (driver["price"] for driver in driver_group),
             Decimal("0"),
         )
@@ -95,10 +136,12 @@ def _calculate_lineups(drivers, constructors, budget):
             if total <= budget:
                 results.append({
                     "drivers": [
-                        driver["name"] for driver in driver_group
+                        driver["name"]
+                        for driver in complete_driver_group
                     ],
                     "estimates": [
-                        driver["estimate"] for driver in driver_group
+                        driver["estimate"]
+                        for driver in complete_driver_group
                     ],
                     "constructor": constructor["name"],
                     "total": total,
@@ -202,7 +245,8 @@ def render_grid_rival_lineup():
     st.subheader("Drivers")
 
     st.caption(
-        "Choose Include or Exclude for each driver."
+        "Choose Include, Exclude, or Lock. "
+        "Locked drivers will appear in every possible lineup."
     )
 
     header_cols = st.columns([4.5, 1.4, 2.2])
@@ -255,7 +299,7 @@ def render_grid_rival_lineup():
 
         choice = row[2].radio(
             "Selection",
-            options=["Include", "Exclude"],
+            options=["Include", "Exclude", "Lock"],
             index=0,
             horizontal=True,
             label_visibility="collapsed",
@@ -270,7 +314,8 @@ def render_grid_rival_lineup():
             "team": team,
             "price": price,
             "estimate": estimate,
-            "included": choice == "Include",
+            "included": choice in ["Include", "Lock"],
+            "locked": choice == "Lock",
         })
 
     # ========================================================
@@ -399,7 +444,8 @@ def render_grid_rival_lineup():
 
             st.warning(
                 "No valid lineups found. Check the budget, available prices, "
-                "and Include / Exclude selections."
+                "Include / Exclude selections, and the number of locked drivers. "
+                "You can lock a maximum of five drivers."
             )
 
         else:
